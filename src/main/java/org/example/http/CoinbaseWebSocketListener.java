@@ -29,7 +29,7 @@ public class CoinbaseWebSocketListener implements WebSocket.Listener {
     public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
         buffer.append(data);
         if (last) {
-            log.info("RECEIVED: [{}]", buffer);
+            log.info("Got new message from Coinbase");
             try {
                 queue.put(buffer.toString());
             } catch (InterruptedException e) {
@@ -38,7 +38,9 @@ public class CoinbaseWebSocketListener implements WebSocket.Listener {
             buffer.setLength(0);
         }
         webSocket.request(1);
-        log.info("In queue {}", queue.size());
+        if (queue.size() > 10) {
+            log.warn("Queue size {}", queue.size());
+        }
         return null;
     }
 

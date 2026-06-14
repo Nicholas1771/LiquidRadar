@@ -17,9 +17,6 @@ public class Config {
     @ConfigurationProperties(prefix = "coinbase")
     public static class CoinbaseConfig {
         String endpoint;
-        String keyId;
-        String secret;
-
         String channel;
         String productIds;
     }
