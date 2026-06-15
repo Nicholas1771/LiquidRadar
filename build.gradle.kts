@@ -1,6 +1,6 @@
 
 plugins {
-    application
+    java
     id("org.springframework.boot") version "3.3.2"
     id("io.spring.dependency-management") version "1.1.6"
 }
@@ -30,6 +30,10 @@ java {
     }
 }
 
-application {
-    mainClass = "org.example.App"
+tasks.getByName<Jar>("jar") {
+    enabled = false
+}
+
+springBoot {
+    mainClass.set("org.example.CoinbaseToKafka")
 }

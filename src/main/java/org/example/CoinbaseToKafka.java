@@ -9,7 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 @Slf4j
 @ConfigurationPropertiesScan
 @SpringBootApplication
-public class CoinbaseToS3 implements CommandLineRunner {
+public class CoinbaseToKafka implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
@@ -17,6 +17,6 @@ public class CoinbaseToS3 implements CommandLineRunner {
     }
 
     public static void main(String[] args) {
-        SpringApplication.run(CoinbaseToS3.class, args);
+        SpringApplication.run(CoinbaseToKafka.class, args);
     }
 }
