@@ -1,27 +1,33 @@
 package org.example.http;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.http.WebSocket;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
 
 @Slf4j
 @RequiredArgsConstructor
 public class CoinbaseWebSocketListener implements WebSocket.Listener {
 
-    private final StringBuilder buffer = new StringBuilder();
-    private final CountDownLatch latch;
     private final String subscribeMessage;
-    private final BlockingQueue<String> queue;
+    private final String heartbeatSubscribeMessage;
+    private final Consumer<String> onMessage;
+    private final Runnable onDisconnect;
+
+    private final StringBuilder buffer = new StringBuilder();
+    @Getter
+    private WebSocket webSocket;
 
     @Override
     public void onOpen(WebSocket webSocket) {
-        log.info("WebSocket connection fully open. Sending subscription payload...");
-
-        webSocket.sendText(subscribeMessage, true);
+        this.webSocket = webSocket;
+        log.info("WebSocket open. Sending subscription payload...");
+        webSocket.sendText(subscribeMessage, true)
+                .thenRun(() -> webSocket.sendText(heartbeatSubscribeMessage, true));;
         webSocket.request(1);
     }
 
@@ -29,31 +35,23 @@ public class CoinbaseWebSocketListener implements WebSocket.Listener {
     public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
         buffer.append(data);
         if (last) {
-            log.info("Got new message from Coinbase");
-            try {
-                queue.put(buffer.toString());
-            } catch (InterruptedException e) {
-                log.error("InterruptedException while adding to string to queue, string {}, error:", buffer, e);
-            }
+            onMessage.accept(buffer.toString());
             buffer.setLength(0);
         }
         webSocket.request(1);
-        if (queue.size() > 10) {
-            log.warn("Queue size {}", queue.size());
-        }
-        return null;
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
     public void onError(WebSocket webSocket, Throwable e) {
-        log.error("WebSocket Error: ", e);
-        latch.countDown();
+        log.error("WebSocket error: ", e);
+        onDisconnect.run();
     }
 
     @Override
     public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
-        log.info("Connection closed: {}", reason);
-        latch.countDown();
-        return null;
+        log.info("WebSocket closed: {}", reason);
+        onDisconnect.run();
+        return CompletableFuture.completedFuture(null);
     }
 }
