@@ -14,6 +14,11 @@ Flow: Coinbase API -> Kafka -> Snowflake table
 # Shutdown
 docker compose down
 
+# Local dev
+Change java code and run gradle clean build
+in docker shutdown java container and rebuild
+docker compose up -d --no-deps --build coinbase-producer
+
 # Useful commands
 terminal:
 check kafka topic message count: docker exec -it docker-kafka-1 kafka-run-class kafka.tools.GetOffsetShell --bootstrap-server localhost:9092 --topic coinbase.trade.btcusd.raw
