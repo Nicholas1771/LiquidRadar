@@ -21,6 +21,8 @@ replay_pid*
 .gradle
 build
 
+ignore
+
 src/main/resources/application-local.properties
 docker/.env
 snowflake/*.p8
