@@ -3,31 +3,31 @@ package org.example.map;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.example.model.Trade;
-import org.springframework.stereotype.Component;
+import org.apache.flink.util.Collector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 
-@Slf4j
-@Component
-public class TradeFlatMap {
+public class TradeFlatMap implements FlatMapFunction<String, Trade> {
 
+    private static final Logger LOG = LoggerFactory.getLogger(TradeFlatMap.class);
     private final ObjectMapper objectMapper;
 
     public TradeFlatMap() {
         objectMapper = new ObjectMapper();
     }
 
-    public List<Trade> map (String trades) {
+    @Override
+    public void flatMap(String trades, Collector<Trade> out) {
         try {
             JsonNode root = objectMapper.readTree(trades);
             JsonNode events = root.path("events");
-            if (!events.isArray()) return new ArrayList<>();
-
-            List<Trade> tradeList = new ArrayList<>();
+            if (!events.isArray()) {
+                return;
+            }
 
             for (JsonNode event : events) {
                 String eventType = event.path("type").asText();
@@ -35,21 +35,20 @@ public class TradeFlatMap {
                 if (!tradesNode.isArray()) continue;
 
                 for (JsonNode tradeNode : tradesNode) {
-                    Trade trade = Trade.builder()
-                            .eventType(eventType)
-                            .tradeId(tradeNode.path("trade_id").asText())
-                            .price(tradeNode.path("price").asDouble())
-                            .size(tradeNode.path("size").asDouble())
-                            .time(Instant.parse(tradeNode.path("time").asText()).toEpochMilli())
-                            .side(tradeNode.path("side").asText())
-                            .build();
-                    tradeList.add(trade);
+                    Trade trade = new Trade(
+                            eventType,
+                            tradeNode.path("trade_id").asText(),
+                            tradeNode.path("price").asDouble(),
+                            tradeNode.path("size").asDouble(),
+                            Instant.parse(tradeNode.path("time").asText()).toEpochMilli(),
+                            tradeNode.path("side").asText()
+                    );
+                    out.collect(trade);
                 }
             }
-            return tradeList;
         } catch (JsonProcessingException e) {
-            log.error("Error mapping trades message [{}]:", trades, e);
-            return new ArrayList<>();
+            LOG.error("Error mapping trades message [{}]:", trades, e);
+            throw new IllegalArgumentException("Invalid Coinbase message", e);
         }
     }
 

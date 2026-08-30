@@ -1,8 +1,7 @@
 
 plugins {
     java
-    id("org.springframework.boot") version "3.3.2"
-    id("io.spring.dependency-management") version "1.1.6"
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 repositories {
@@ -10,18 +9,13 @@ repositories {
 }
 
 dependencies {
-    compileOnly("org.projectlombok:lombok")
-    annotationProcessor("org.projectlombok:lombok")
+    implementation("org.apache.flink:flink-clients:1.19.1")
+    implementation("org.apache.flink:flink-streaming-java:1.19.1")
+    implementation("org.apache.kafka:kafka-clients:3.7.0")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
 
-    implementation("org.springframework.boot:spring-boot-starter")
-    implementation("org.springframework.boot:spring-boot-starter-websocket")
-    implementation("org.springframework.kafka:spring-kafka")
-
-    implementation("io.jsonwebtoken:jjwt-api:0.12.5")
-    implementation("io.jsonwebtoken:jjwt-impl:0.12.5")
-    implementation("io.jsonwebtoken:jjwt-jackson:0.12.5")
-
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation(platform("org.junit:junit-bom:5.10.3"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
 java {
@@ -30,10 +24,21 @@ java {
     }
 }
 
+tasks.test {
+    useJUnitPlatform()
+}
+
 tasks.getByName<Jar>("jar") {
     enabled = false
 }
 
-springBoot {
-    mainClass.set("org.example.CoinbaseToKafka")
+tasks.shadowJar {
+    archiveClassifier.set("all")
+    manifest {
+        attributes["Main-Class"] = "org.example.LiquidRadarFlink"
+    }
+}
+
+tasks.build {
+    dependsOn(tasks.shadowJar)
 }
