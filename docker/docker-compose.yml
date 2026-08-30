@@ -89,11 +89,14 @@ services:
             }
           }' http://kafka-connect:8083/connectors
 
-  coinbase-producer:
+  liquidradar-flink:
     build: ..
     depends_on:
       - kafka
       - kafka-connect-provisioner
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_TOPIC: coinbase.trade.btcusd.raw
 
 volumes:
   zookeeper_data:

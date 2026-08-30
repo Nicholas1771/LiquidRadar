@@ -1,9 +1,6 @@
 package org.example.model;
 
-import lombok.Builder;
-
-@Builder
-public record Trade (
+public record Trade(
         String eventType,
         String tradeId,
         Double price,
